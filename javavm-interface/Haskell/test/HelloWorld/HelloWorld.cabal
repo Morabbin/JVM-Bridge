@@ -1,0 +1,16 @@
+name:            HelloWorld
+synopsis:        Test the JVM-Bridge
+version:         1.0
+license-file:    LICENSE
+author:          Ashley Yakeley <ashley@semantic.org>
+maintainer:      Ashley Yakeley <ashley@semantic.org>
+build-type:      Simple
+
+executable:      HelloWorld
+main-is:         HelloWorld.hs
+build-depends:   base >= 4.0
+               , witness == 0.2
+               , javavm
+               , javavm-interface
+frameworks:      JavaVM
+extensions:      OverloadedStrings

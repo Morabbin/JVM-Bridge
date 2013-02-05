@@ -1,43 +1,35 @@
-default: build
 
-datadir = /usr/lib/jvm-bridge/share
-includedir = /usr/lib/jvm-bridge/include
-libdir = /usr/lib/jvm-bridge/lib
-bindir = /usr/lib/jvm-bridge/bin
-JVMFILE			= $(datadir)/current.jvm
+TOP=$(shell pwd)/../..
+include $(TOP)/mk/common.mk
 
-javavm-interface.cabal: javavm-interface.cabal.m4
-	. $(JVMFILE); m4 \
-		-DOSNAME="`uname -o`" \
-		-DINCLUDEDIRS="$(includedir) $${JVM_INCLUDES}" \
-		-DLIBDIRS="$(libdir) $${JVM_LIBDIRS}" \
-		-DJVM_LDFLAGS="$${JVM_LDFLAGS}" \
-		-DJVM_FRAMEWORKDIRS="$${JVM_FRAMEWORKDIRS}" \
-		-DJVM_FRAMEWORKS="$${JVM_FRAMEWORKS}" \
-		-DPROGRAM= $< > $@
+default: install
+
+javavm-interface.cabal: javavm-interface.cabal.m4 Foreign/JavaVM/Configure.hs
+	m4 -DOSNAME="$(shell uname -s)"                              \
+	   -DINCLUDEDIRS="$(JVMB_INCLUDEDIR) $(JVM_INCLUDES)"        \
+	   -DLIBDIRS="$(JVMB_LIBDIR) $(JVM_LIBDIRS)"                 \
+	   -DFRAMEWORKDIR=$(JVM_FRAMEWORKDIR)                        \
+	   -DFRAMEWORK=$(JVM_FRAMEWORK)                              \
+	   -DPROGRAM= $< > $@
 
 Foreign/JavaVM/Configure.hs: Foreign/JavaVM/Configure.hs.m4
-	. $(JVMFILE); m4 -DADDRESSSIZE="$${JVM_ADDRESSSIZE}" $< > $@
+	m4 -DADDRESSSIZE="$(JVM_ADDRESSSIZE)" $< > $@
 
 clean: javavm-interface.cabal
-	cd test; make clean
-	cabal clean
+	cd test && make clean
+	$(CABAL) $(CABAL_FLAGS) clean
 	rm javavm-interface.cabal
-	rm -f Foreign/JavaVM/Configure.hs
+	# rm -f Foreign/JavaVM/Configure.hs
 
-configure: javavm-interface.cabal Foreign/JavaVM/Configure.hs
-	cabal configure
+haddock:
+	$(CABAL) $(CABAL_FLAGS) haddock
 
-build: configure
-	cabal build
-
-haddock: configure
-	cabal haddock
-
-install: build haddock
-	cabal install --user
+install: javavm-interface.cabal
+	$(CABAL) $(CABAL_FLAGS) install
 
 check: install
-	cd test; make test
+	rm -f javavm-interface.cabal
+	cd test && make check
 
 .SECONDARY:
+

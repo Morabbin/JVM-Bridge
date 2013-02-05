@@ -1,0 +1,16 @@
+name:            Exception
+synopsis:        Test the JVM-Bridge exception mechanism
+version:         1.0
+license-file:    LICENSE
+author:          Ashley Yakeley <ashley@semantic.org>
+maintainer:      Ashley Yakeley <ashley@semantic.org>
+build-type:      Simple
+
+executable:      Exception
+main-is:         Exception.hs
+build-depends:   base >= 4.0
+               , witness == 0.2
+               , javavm
+               , javavm-interface
+frameworks:      JavaVM
+extensions:      OverloadedStrings
