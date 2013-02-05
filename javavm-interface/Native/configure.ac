@@ -58,13 +58,13 @@ CHECK_JVM(${THEJVM})
 ])
 
 #
-AC_INIT
+AC_INIT([JVM-Bridge], [0.3.1])
 AC_CONFIG_MACRO_DIR([m4])
 AC_CONFIG_SRCDIR([JVMBridge.cpp])
-AM_INIT_AUTOMAKE(JVM-Bridge, 0.3.1)
+AM_INIT_AUTOMAKE
 AC_CONFIG_HEADERS(autoheader.h)
 
-AC_PREFIX_DEFAULT(/usr/lib/jvm-bridge)
+AC_PREFIX_DEFAULT(/usr/local/jvm-bridge)
 
 AC_ARG_WITH([jvm],[  --with-jvm=JVM          use Java VM type JVM],
 [JVMFILTER="^\(.*\.\)*$(echo ${with_jvm}|sed -e 's/\./\\\./')\(\..*\)*$"],

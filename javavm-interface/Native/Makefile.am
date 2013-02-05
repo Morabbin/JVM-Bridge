@@ -1,39 +1,41 @@
+
+TOP=$(shell pwd)/../..
+include $(TOP)/mk/common.mk
+
 if DLL
 SUBDIRS=win32
 endif
 
-include_HEADERS					= JVMBridge.h ExecuteFunctionControl.h ValueList.h JVMInvocation.h
-lib_LTLIBRARIES					= libJVMBridge.la libJVMInvocation.la
-data_DATA						= JVMBridge.jar current.jvm
-libJVMBridge_la_SOURCES			= JVMBridge.cpp ValueList.cpp ExecuteFunction.cpp Debug.hpp JVMBridge.h CallbackSupport.h ValueListPrivate.hpp ValueList.h Configure.h ExecuteFunctionControl.h
-libJVMInvocation_la_SOURCES		= JVMInvocation.cpp File.cpp Debug.hpp JVMInvocation.h File.hpp Configure.h
-libJVMBridge_la_LDFLAGS			= -Wl,-lstdc++
-libJVMInvocation_la_LDFLAGS		= -Wl,-lstdc++
-INCLUDES						= $(patsubst %,-I%,@JVM_INCLUDES@)
+include_HEADERS= JVMBridge.h ExecuteFunctionControl.h ValueList.h JVMInvocation.h
+lib_LTLIBRARIES	= libJVMBridge.la libJVMInvocation.la
+data_DATA= JVMBridge.jar current.jvm
+libJVMBridge_la_SOURCES= JVMBridge.cpp ValueList.cpp ExecuteFunction.cpp Debug.hpp JVMBridge.h CallbackSupport.h ValueListPrivate.hpp ValueList.h Configure.h ExecuteFunctionControl.h
+libJVMInvocation_la_SOURCES= JVMInvocation.cpp File.cpp Debug.hpp JVMInvocation.h File.hpp Configure.h
+libJVMBridge_la_LDFLAGS= -Wl,-lstdc++
+libJVMInvocation_la_LDFLAGS= -Wl,-lstdc++
+INCLUDES=$(JVM_INCLUDE_FLAGS)
 
-TestJVMBridge_SOURCES			= TestJVMBridge.cpp JVMInvocation.h JVMBridge.h CallbackSupport.h Debug.hpp Configure.h
-TestJVMBridge_LDADD				= libJVMInvocation.la libJVMBridge.la @JVM_LDFLAGS@
-TestJVMBridge_LDFLAGS			= $(patsubst %,-F%,@JVM_FRAMEWORKDIRS@) $(patsubst %,-framework %,@JVM_FRAMEWORKS@) $(patsubst %,-rpath %,@JVM_LIBDIRS@)
-TestFile_SOURCES				= TestFile.cpp		
-FindClasses_SOURCES				= FindClasses.cpp JVMInvocation.h JVMBridge.h CallbackSupport.h Debug.hpp Configure.h	
-FindClasses_LDADD				= libJVMInvocation.la libJVMBridge.la @JVM_LDFLAGS@
-FindClasses_LDFLAGS				= $(patsubst %,-F%,@JVM_FRAMEWORKDIRS@) $(patsubst %,-framework %,@JVM_FRAMEWORKS@) $(patsubst %,-rpath %,@JVM_LIBDIRS@)
+TestJVMBridge_SOURCES=TestJVMBridge.cpp JVMInvocation.h JVMBridge.h CallbackSupport.h Debug.hpp Configure.h
+TestJVMBridge_LDADD=libJVMInvocation.la libJVMBridge.la $(JVM_LDFLAGS)
+TestJVMBridge_LDFLAGS=$(JVM_LDFLAGS)
+TestFile_SOURCES=TestFile.cpp
+FindClasses_SOURCES=FindClasses.cpp JVMInvocation.h JVMBridge.h CallbackSupport.h Debug.hpp Configure.h
+FindClasses_LDADD=libJVMInvocation.la libJVMBridge.la $(JVM_LDFLAGS)
+FindClasses_LDFLAGS=$(JVM_LDFLAGS)
 
-PACKAGE_SLASH	= org/semantic/jvmbridge/
-JAVACFLAGS		= @JAVACFLAGS@
-empty:=
+PACKAGE_SLASH=org/semantic/jvmbridge/
+# JAVACFLAGS=$(JAVACFLAGS)
 ACLOCAL_AMFLAGS = -I m4
-AM_CPPFLAGS		= @JVM_CPPFLAGS@ @DEBUG_CPPFLAGS@
-AM_CXXFLAGS		= -O3 -W -Wall -fno-rtti
+AM_CPPFLAGS=$(JVM_CPPFLAGS) @DEBUG_CPPFLAGS@
+AM_CXXFLAGS= -O3 -W -Wall -fno-rtti
 
-check_PROGRAMS	= TestJVMBridge TestFile FindClasses
+check_PROGRAMS= TestJVMBridge TestFile FindClasses
 
 check: TestJVMBridge.out TestFile.out FindClasses.out
-	
 
 TestJVMBridge.out: TestJVMBridge JVMBridge.jar TestApp.jar
 	./TestJVMBridge ./JVMBridge.jar:./TestApp.jar org/semantic/test/TestApp
-	
+
 TestFile.out: TestFile
 	./$<
 
@@ -51,19 +53,19 @@ ValueList.lo: ValueListPrivate.hpp ValueList.h Debug.hpp
 JVMBridge.lo: JVMBridge.h ValueListPrivate.hpp ValueList.h Debug.hpp
 
 TestApp.java: TestApp.java-pp Configure.h autoheader.h
-	$(PP) $(PPFLAGS) -P $(CPPFLAGS) -DLIBNAME='"JVMBridge"' $< | grep -v '^typedef' > $@
+	$(PP) $(PPFLAGS) -P $(CPPFLAGS) -DLIBNAME="JVMBridge" $< | grep -v '^typedef' > $@
 
 ExecuteFunction.java: ExecuteFunction.java-pp Configure.h autoheader.h
-	$(PP) $(PPFLAGS) -P $(CPPFLAGS) -DLIBNAME='"JVMBridge"' $< | grep -v '^typedef' > $@
+	$(PP) $(PPFLAGS) -P $(CPPFLAGS) -DLIBNAME="JVMBridge" $< | grep -v '^typedef' > $@
 
 $(PACKAGE_SLASH)ExecuteFunction.class: ExecuteFunction.java
-	$(JAVAC) $(JAVACFLAGS) $(AM_JAVACFLAGS) -d . $<
+	$(JAVAC) $(JAVACFLAGS) -d . $<
 
 JVMBridge.jar: $(PACKAGE_SLASH)ExecuteFunction.class
 	$(JAR) cvf $@ $(PACKAGE_SLASH)ExecuteFunction*.class
 
 org/semantic/test/TestApp.class: TestApp.java
-	$(JAVAC) $(JAVACFLAGS) $(AM_JAVACFLAGS) -d . $<
+	$(JAVAC) $(JAVACFLAGS) -d . $<
 
 TestApp.jar: org/semantic/test/TestApp.class
 	$(JAR) cvf $@ $^

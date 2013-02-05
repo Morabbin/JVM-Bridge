@@ -7,6 +7,8 @@ If you've just fetched from CVS, you'll need to build the configure scripts. You
     automake -a
     autoheader
 
+(glibtoolize on Max OS X.)
+
 Now you're at the point of the source distribution.
 
 
