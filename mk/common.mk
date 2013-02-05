@@ -1,0 +1,20 @@
+
+SANDBOX=$(TOP)/sandbox
+CABAL=cabal-dev
+CABAL_FLAGS=--sandbox=$(SANDBOX)
+
+JVMB_PREFIX_DIR=/usr/local/jvm-bridge
+JVMB_DATADIR=$(JVMB_PREFIX_DIR)/share
+JVMB_INCLUDEDIR=$(JVMB_PREFIX_DIR)/include
+JVMB_LIBDIR=$(JVMB_PREFIX_DIR)/lib
+JVMB_BINDIR=$(JVMB_PREFIX_DIR)/bin
+
+JVMFILE=$(JVMB_DATADIR)/current.jvm.mk
+
+JAVA_HOME=$(realpath $(shell echo $JAVA_HOME))
+
+include $(JVMFILE)
+
+JVM_INCLUDE_FLAGS=$(patsubst %,-I%,$(JVMB_INCLUDEDIR) $(JVM_INCLUDES))
+JVM_LDFLAGS+=-F $(JVM_FRAMEWORKDIR) -framework $(JVM_FRAMEWORK) -rpath $(JVMB_LIBDIR))
+
