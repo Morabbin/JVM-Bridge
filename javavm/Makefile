@@ -1,24 +1,28 @@
+
+
+CABAL=cabal
+
 default: build
 
 # Building
 
 clean:
-	cabal clean
+	$(CABAL) clean
 
 configure:
-	cabal configure
+	$(CABAL) configure
 
 build: configure
-	cabal build --ghc-options="-Wall -Werror"
+	$(CABAL) build --ghc-options="-Wall -Werror"
 
 haddock: configure
-	cabal haddock
+	$(CABAL) haddock
 
 install: build haddock
-	cabal install --user
+	$(CABAL) install --user
 
 sdist: configure
-	cabal sdist
+	$(CABAL) sdist
 
 # switch off intermediate file deletion
 .SECONDARY:

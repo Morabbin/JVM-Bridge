@@ -1,20 +1,14 @@
-build: HelloWorld.diff TestException.diff
 
-%.diff: %.ref %.out
-	diff -u $^
+TOP=$(realpath $(shell pwd)/../../..)
+include $(TOP)/mk/common.mk
 
-%.out: %
-	./$< > $@
+TESTDIRS=HelloWorld Exception
 
-HelloWorld: HelloWorld.hs
-	ghc -o $@ $< -XOverloadedStrings -hide-all-packages -package base -package witness -package javavm -package javavm-interface
+check:
+	$(MAKE) -C HelloWorld check
+	$(MAKE) -C Exception check
 
-TestException: TestException.hs
-	ghc -o $@ $< -XOverloadedStrings -hide-all-packages -package base -package witness -package javavm -package javavm-interface
+clean::
+	$(MAKE) -C HelloWorld clean
+	$(MAKE) -C Exception clean
 
-clean:
-	rm -f HelloWorld TestException *.hi *.o *.out
-
-check: test
-
-.SECONDARY:

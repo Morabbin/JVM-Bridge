@@ -1,10 +1,11 @@
-name:			javavm-interface
-version:		1.0
-license-file:	LICENSE
-author:			Ashley Yakeley <ashley@semantic.org>
-maintainer:		Ashley Yakeley <ashley@semantic.org>
-build-depends:	base >= 4.0, witness, javavm
-synopsis:		bridge to a running Java Virtual Machine
+name:                   javavm-interface
+version:                1.0
+license-file:           LICENSE
+author:                 Ashley Yakeley <ashley@semantic.org>
+maintainer:             Yakeley <ashley@semantic.org>
+build-depends:          base >= 4.0, witness, javavm
+synopsis:               bridge to a running Java Virtual Machine
+build-type:             Simple
 extensions:
 	ForeignFunctionInterface
 	ImplicitParams
@@ -50,10 +51,8 @@ other-modules:
 	Foreign.JavaVM.VM.Types
 	Foreign.JavaVM.VM.ValueList
 	Foreign.JavaVM.VM.Invocation
-c-sources:			cbits/HsExecuteFunction.c
-include-dirs:		include/ INCLUDEDIRS
+c-sources:		cbits/HsExecuteFunction.c
+include-dirs:   	./include/ INCLUDEDIRS
 extra-lib-dirs:		patsubst(LIBDIRS,`:',` ')
-extra-libraries:	JVMBridge JVMInvocation
-ld-options:			JVM_LDFLAGS ifelse(OSNAME,`Darwin',`',`patsubst(patsubst(LIBDIRS,`:',` '),`[^ 	]+',`"-Wl,-rpath" "-Wl,\&"')')
--- framework-dirs:		JVM_FRAMEWORKDIRS
--- frameworks:			JVM_FRAMEWORKS
+extra-libraries:	objc JVMBridge JVMInvocation
+frameworks:		FRAMEWORK

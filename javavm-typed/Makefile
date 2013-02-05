@@ -1,9 +1,9 @@
+
+TOP=$(shell pwd)/..
+include $(TOP)/mk/common.mk
+
 default: build
 
-datadir = /usr/lib/jvm-bridge/share
-libdir = /usr/lib/jvm-bridge/lib
-bindir = /usr/lib/jvm-bridge/bin
-JVMFILE			= $(datadir)/current.jvm
 
 ShowClasses.cabal: cabal.m4
 	m4 -DPROGRAM=ShowClasses $< > $@
@@ -40,19 +40,13 @@ cabal-install-%:
 dist/build/ShowClasses/ShowClasses: cabal-build-ShowClasses
 
 cabal-clean:
-	cabal clean
+	$(CABAL) $(CABAL_FLAGS) clean
 
-cabal-configure:
-	cabal configure
+cabal-haddock:
+	-$(CABAL) $(CABAL_FLAGS) haddock
 
-cabal-build: cabal-configure
-	cabal build
-
-cabal-haddock: cabal-configure
-	-cabal haddock
-
-cabal-install: cabal-build cabal-haddock
-	cabal install --user
+cabal-install: 
+	$(CABAL) $(CABAL_FLAGS) install
 
 clean: cabal-clean-ShowClasses cabal-clean-stage2
 	rm -rf Foreign/JavaVM/Invocation.hs Foreign/JavaVM/Lib/Header/* Foreign/JavaVM/Lib/Class_* ShowClasses *.hi *.o *.inplace *.classlist MakeClassModule MakeHeaderModule MakeJVMModule
@@ -67,19 +61,19 @@ MakeHeaderModule.inplace: MakeHeaderModule.m4
 	chmod a+x $@
 
 MakeClassModule.inplace: MakeClassModule.m4
-	. $(JVMFILE); m4 -Dbindir=. -Ddatadir=. -Djardir=$(datadir) -Dlibdirs="$(libdir)/:$${JVM_LIBDIRS}" $< > $@
+	m4 -Dbindir=. -Ddatadir=. -Djardir=$(JVMB_DATADIR) -Dlibdirs="$(JVMB_LIBDIR):$(JVM_LIBDIRS)" $< > $@
 	chmod a+x $@
 
 MakeClassModule: MakeClassModule.m4
-	. $(JVMFILE); m4 -Dbindir=$(bindir) -Ddatadir=$(datadir) -Djardir=$(datadir) -Dlibdirs="$(libdir)/:$${JVM_LIBDIRS}" $< > $@
+	. $(JVMFILE); m4 -Dbindir=$(JVMB_BINDIR) -Ddatadir=$(JVMB_DATADIR) -Djardir=$(JVMB_DATADIR) -Dlibdirs="$(JVMB_LIBDIR):$(JVM_LIBDIRS)" $< > $@
 	chmod a+x $@
 
 MakeHeaderModule: MakeHeaderModule.m4
-	m4 -Ddatadir=$(datadir) $< > $@
+	m4 -Ddatadir=$(JVMB_DATADIR) $< > $@
 	chmod a+x $@
 
 MakeJVMModule: MakeJVMModule.m4
-	m4 -Ddatadir=$(datadir) $< > $@
+	m4 -Ddatadir=$(JVMB_DATADIR) $< > $@
 	chmod a+x $@
 
 %.classlist: All.classlist %.allowedclasses
@@ -95,7 +89,7 @@ Foreign/JavaVM/Lib/Class_%.hs: MakeClassModule.inplace Java.classlist ShowClasse
 	./MakeClassModule.inplace -import Foreign.JavaVM.Lib.Header.Java `echo $* | sed -e 's/_/\./g; s/\.\./_/g'` > $@
 
 Foreign/JavaVM/Invocation.hs: Foreign/JavaVM/Invocation.hs.m4
-	m4 -DBRIDGEJAR="$(datadir)/JVMBridge.jar" $< > $@
+	m4 -DBRIDGEJAR="$(JVMB_DATADIR)/JVMBridge.jar" $< > $@
 
 otherstuff:	\
 	Foreign/JavaVM/Lib/Header/Java.hs	\
@@ -114,10 +108,10 @@ build: extrastuff cabal-build-stage2
 haddock: otherstuff cabal-haddock-stage2
 
 install: extrastuff cabal-install-stage2
-	sudo install -D -s ShowClasses $(bindir)/ShowClasses
-	sudo install -D Class.m4 $(datadir)/Class.m4
-	sudo install -D MakeClassModule $(bindir)/MakeClassModule
-	sudo install -D JVM.m4 $(datadir)/JVM.m4
-	sudo install -D MakeJVMModule $(bindir)/MakeJVMModule
-	sudo install -D Header.m4 $(datadir)/Header.m4
-	sudo install -D MakeHeaderModule $(bindir)/MakeHeaderModule
+	sudo install -D -s ShowClasses $(JVMB_BINDIR)/ShowClasses
+	sudo install -D Class.m4 $(JVMB_DATADIR)/Class.m4
+	sudo install -D MakeClassModule $(JVMB_BINDIR)/MakeClassModule
+	sudo install -D JVM.m4 $(JVMB_DATADIR)/JVM.m4
+	sudo install -D MakeJVMModule $(JVMB_BINDIR)/MakeJVMModule
+	sudo install -D Header.m4 $(JVMB_DATADIR)/Header.m4
+	sudo install -D MakeHeaderModule $(JVMB_BINDIR)/MakeHeaderModule
