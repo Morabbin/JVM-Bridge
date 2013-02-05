@@ -1,0 +1,3 @@
+# Windows paths; must work for both MinGW and cygwin
+D:/Programme/j2sdk*
+D:/j2sdk*

@@ -1,0 +1,624 @@
+/*
+JVM-Bridge -- bridge from FP languages and others to the Java VM
+Copyright (C) 2001 Ashley Yakeley <ashley@semantic.org>
+
+This library is free software; you can redistribute it and/or
+modify it under the terms of the GNU Lesser General Public
+License as published by the Free Software Foundation; either
+version 2.1 of the License, or (at your option) any later version.
+
+This library is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+Lesser General Public License for more details.
+
+You should have received a copy of the GNU Lesser General Public
+License along with this library; if not, write to the Free Software
+Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+*/
+#include "Configure.h"
+
+package    org.semantic.jvmbridge;
+import    java.util.Vector;
+
+public class ExecuteFunction
+    {
+    public static native JOpaqueAddress    createValueList            ();
+    public static native void            destroyValueList        (JOpaqueAddress vlist);
+
+    public static native void        addToValueList            (JOpaqueAddress vlist,boolean value);
+    public static native void        addToValueList            (JOpaqueAddress vlist,byte value);
+    public static native void        addToValueList            (JOpaqueAddress vlist,char value);
+    public static native void        addToValueList            (JOpaqueAddress vlist,short value);
+    public static native void        addToValueList            (JOpaqueAddress vlist,int value);
+    public static native void        addToValueList            (JOpaqueAddress vlist,long value);
+    public static native void        addToValueList            (JOpaqueAddress vlist,float value);
+    public static native void        addToValueList            (JOpaqueAddress vlist,double value);
+    public static native void        addToValueList            (JOpaqueAddress vlist,Object value);
+
+    /**
+    destroys arglist
+    */
+    public static native void        executeVoidFunctionNow        (JOpaqueAddress f,JOpaqueAddress arglist)
+     throws Throwable;
+    /**
+    destroys arglist
+    */
+    public static native boolean    executeBooleanFunctionNow    (JOpaqueAddress f,JOpaqueAddress arglist)
+     throws Throwable;
+    /**
+    destroys arglist
+    */
+    public static native byte        executeByteFunctionNow        (JOpaqueAddress f,JOpaqueAddress arglist)
+     throws Throwable;
+    /**
+    destroys arglist
+    */
+    public static native char        executeCharFunctionNow        (JOpaqueAddress f,JOpaqueAddress arglist)
+     throws Throwable;
+    /**
+    destroys arglist
+    */
+    public static native short        executeShortFunctionNow        (JOpaqueAddress f,JOpaqueAddress arglist)
+     throws Throwable;
+    /**
+    destroys arglist
+    */
+    public static native int        executeIntFunctionNow        (JOpaqueAddress f,JOpaqueAddress arglist)
+     throws Throwable;
+    /**
+    destroys arglist
+    */
+    public static native long        executeLongFunctionNow        (JOpaqueAddress f,JOpaqueAddress arglist)
+     throws Throwable;
+    /**
+    destroys arglist
+    */
+    public static native float        executeFloatFunctionNow        (JOpaqueAddress f,JOpaqueAddress arglist)
+     throws Throwable;
+    /**
+    destroys arglist
+    */
+    public static native double        executeDoubleFunctionNow    (JOpaqueAddress f,JOpaqueAddress arglist)
+     throws Throwable;
+    /**
+    destroys arglist
+    */
+    public static native Object        executeObjectFunctionNow    (JOpaqueAddress f,JOpaqueAddress arglist)
+     throws Throwable;
+    public static native void        freeFunctionNow                (JOpaqueAddress f);
+
+#if SYNCH
+    private static abstract class DeferredProc
+        {
+        private    boolean        mDone;
+        private    Throwable    mException;
+        
+        public DeferredProc()
+            {
+            mDone = false;
+            mException = null;
+            }
+        
+        public synchronized void waitUntilDone()
+         throws Throwable
+            {
+            while (!mDone)
+                {
+                try
+                    {
+                    wait();
+                    }
+                catch (InterruptedException x)
+                    {
+                    // ignore
+                    }
+                }
+            if (mException != null)
+             throw mException;
+            }
+        
+        public synchronized void waitUntilDoneNoThrow()
+            {
+            while (!mDone)
+                {
+                try
+                    {
+                    wait();
+                    }
+                catch (InterruptedException x)
+                    {
+                    // ignore
+                    }
+                }
+            if (mException != null)
+             throw new Error(mException.toString());
+            }
+        
+        protected abstract void doProcNow()
+         throws Throwable;
+            
+        public void doProc()
+            {
+            try
+                {
+                doProcNow();
+                }
+            catch (Throwable x)
+                {
+                mException = x;
+                }
+            synchronized (this)
+                {
+                mDone = true;
+                notifyAll();
+                }
+            }
+        };
+
+    private static Thread    mMainThread;
+    private static Vector    mDeferredProcs;
+
+    private static void queueProc(DeferredProc proc)
+        {
+        JDEBUGMESSAGE("J+ DeferredProc.queueProc");
+        if (mMainThread == Thread.currentThread())
+            {
+            JDEBUGMESSAGE("J+ doing proc immediately");
+            proc.doProc();
+            JDEBUGMESSAGE("J- doing proc immediately");
+            }
+        else
+            {
+        //    synchronized (mDeferredProcs) already synchronized
+                {
+                JDEBUGMESSAGE("J+ adding proc to queue");
+                mDeferredProcs.addElement(proc);
+                JDEBUGMESSAGE("J- adding proc to queue");
+                }
+            }
+        JDEBUGMESSAGE("J- DeferredProc.queueProc");
+        }
+
+    public static boolean procPending()
+        {
+        synchronized (mDeferredProcs)
+            {
+            return !mDeferredProcs.isEmpty();
+            }
+        }
+
+    public static void doNextProc()
+        {
+        JDEBUGMESSAGE("J+ DeferredProc.doNextProc");
+        DeferredProc proc = null;
+        synchronized (mDeferredProcs)
+            {
+            if (!mDeferredProcs.isEmpty())
+                {
+                JDEBUGMESSAGE("J+ fetching proc");
+                proc = (DeferredProc) mDeferredProcs.firstElement();
+                mDeferredProcs.removeElementAt(0);
+                JDEBUGMESSAGE("J- fetching proc");
+                }
+            }
+        if (proc != null)
+            {
+            JDEBUGMESSAGE("J+ doing proc");
+            proc.doProc();
+            JDEBUGMESSAGE("J- doing proc");
+            }
+        JDEBUGMESSAGE("J- DeferredProc.doNextProc");
+        }
+
+    private static class FreeFunctionDeferredProc
+    extends DeferredProc
+        {
+        private JOpaqueAddress    mFunction;
+        
+        public FreeFunctionDeferredProc(JOpaqueAddress function)
+            {
+            mFunction = function;
+            };
+        
+        protected void doProcNow()
+            {
+            freeFunctionNow(mFunction);
+            };
+        };
+
+    private static abstract class ExecuteFunctionDeferredProc
+    extends DeferredProc
+        {
+        protected JOpaqueAddress    mFunction;
+        protected JOpaqueAddress    mArgList;
+        
+        public ExecuteFunctionDeferredProc(JOpaqueAddress function,JOpaqueAddress arglist)
+            {
+            mFunction = function;
+            mArgList = arglist;
+            }
+        };
+
+    private static class ExecuteVoidFunctionDeferredProc
+    extends ExecuteFunctionDeferredProc
+        {
+        public ExecuteVoidFunctionDeferredProc(JOpaqueAddress function,JOpaqueAddress arglist)
+            {
+            super(function,arglist);
+            }
+        
+        protected void doProcNow()
+         throws Throwable
+            {
+            JDEBUGMESSAGE("J+ ExecuteVoidFunctionDeferredProc.doProcNow");
+            executeVoidFunctionNow(mFunction,mArgList);
+            JDEBUGMESSAGE("J- ExecuteVoidFunctionDeferredProc.doProcNow");
+            };
+        };
+
+    private static class ExecuteBooleanFunctionDeferredProc
+    extends ExecuteFunctionDeferredProc
+        {
+        public boolean mResult;
+        
+        public ExecuteBooleanFunctionDeferredProc(JOpaqueAddress function,JOpaqueAddress arglist)
+            {
+            super(function,arglist);
+            }
+        
+        protected void doProcNow()
+         throws Throwable
+            {
+            mResult = executeBooleanFunctionNow(mFunction,mArgList);
+            };
+        };
+
+    private static class ExecuteByteFunctionDeferredProc
+    extends ExecuteFunctionDeferredProc
+        {
+        public byte mResult;
+        
+        public ExecuteByteFunctionDeferredProc(JOpaqueAddress function,JOpaqueAddress arglist)
+            {
+            super(function,arglist);
+            }
+        
+        protected void doProcNow()
+         throws Throwable
+            {
+            mResult = executeByteFunctionNow(mFunction,mArgList);
+            };
+        };
+
+    private static class ExecuteCharFunctionDeferredProc
+    extends ExecuteFunctionDeferredProc
+        {
+        public char mResult;
+        
+        public ExecuteCharFunctionDeferredProc(JOpaqueAddress function,JOpaqueAddress arglist)
+            {
+            super(function,arglist);
+            }
+        
+        protected void doProcNow()
+         throws Throwable
+            {
+            mResult = executeCharFunctionNow(mFunction,mArgList);
+            };
+        };
+
+    private static class ExecuteShortFunctionDeferredProc
+    extends ExecuteFunctionDeferredProc
+        {
+        public short mResult;
+        
+        public ExecuteShortFunctionDeferredProc(JOpaqueAddress function,JOpaqueAddress arglist)
+            {
+            super(function,arglist);
+            }
+        
+        protected void doProcNow()
+         throws Throwable
+            {
+            mResult = executeShortFunctionNow(mFunction,mArgList);
+            };
+        };
+
+    private static class ExecuteIntFunctionDeferredProc
+    extends ExecuteFunctionDeferredProc
+        {
+        public int mResult;
+        
+        public ExecuteIntFunctionDeferredProc(JOpaqueAddress function,JOpaqueAddress arglist)
+            {
+            super(function,arglist);
+            }
+        
+        protected void doProcNow()
+         throws Throwable
+            {
+            mResult = executeIntFunctionNow(mFunction,mArgList);
+            };
+        };
+
+    private static class ExecuteLongFunctionDeferredProc
+    extends ExecuteFunctionDeferredProc
+        {
+        public long mResult;
+        
+        public ExecuteLongFunctionDeferredProc(JOpaqueAddress function,JOpaqueAddress arglist)
+            {
+            super(function,arglist);
+            }
+        
+        protected void doProcNow()
+         throws Throwable
+            {
+            mResult = executeLongFunctionNow(mFunction,mArgList);
+            };
+        };
+
+    private static class ExecuteFloatFunctionDeferredProc
+    extends ExecuteFunctionDeferredProc
+        {
+        public float mResult;
+        
+        public ExecuteFloatFunctionDeferredProc(JOpaqueAddress function,JOpaqueAddress arglist)
+            {
+            super(function,arglist);
+            }
+        
+        protected void doProcNow()
+         throws Throwable
+            {
+            mResult = executeFloatFunctionNow(mFunction,mArgList);
+            };
+        };
+
+    private static class ExecuteDoubleFunctionDeferredProc
+    extends ExecuteFunctionDeferredProc
+        {
+        public double mResult;
+        
+        public ExecuteDoubleFunctionDeferredProc(JOpaqueAddress function,JOpaqueAddress arglist)
+            {
+            super(function,arglist);
+            }
+        
+        protected void doProcNow()
+         throws Throwable
+            {
+            mResult = executeDoubleFunctionNow(mFunction,mArgList);
+            };
+        };
+
+    private static class ExecuteObjectFunctionDeferredProc
+    extends ExecuteFunctionDeferredProc
+        {
+        public Object mResult;
+        
+        public ExecuteObjectFunctionDeferredProc(JOpaqueAddress function,JOpaqueAddress arglist)
+            {
+            super(function,arglist);
+            }
+        
+        protected void doProcNow()
+         throws Throwable
+            {
+            mResult = executeObjectFunctionNow(mFunction,mArgList);
+            };
+        };
+#endif
+
+    /**
+    destroys arglist
+    */
+    public static void executeVoidFunctionDeferred(JOpaqueAddress f,JOpaqueAddress arglist)
+     throws Throwable
+        {
+        JDEBUGMESSAGE("J+ ExecuteFunction.executeVoidFunctionDeferred");
+#if SYNCH
+        ExecuteVoidFunctionDeferredProc proc = new ExecuteVoidFunctionDeferredProc(f,arglist);
+        queueProc(proc);
+        proc.waitUntilDone();
+#else
+        executeVoidFunctionNow(f,arglist);
+#endif
+        JDEBUGMESSAGE("J- ExecuteFunction.executeVoidFunctionDeferred");
+        }
+
+    /**
+    destroys arglist
+    */
+    public static boolean executeBooleanFunctionDeferred(JOpaqueAddress f,JOpaqueAddress arglist)
+     throws Throwable
+        {
+        JDEBUGMESSAGE("J+ ExecuteFunction.executeBooleanFunctionDeferred");
+#if SYNCH
+        ExecuteBooleanFunctionDeferredProc proc = new ExecuteBooleanFunctionDeferredProc(f,arglist);
+        queueProc(proc);
+        proc.waitUntilDone();
+        boolean result = proc.mResult;
+#else
+        boolean result = executeBooleanFunctionNow(f,arglist);
+#endif
+        JDEBUGMESSAGE("J- ExecuteFunction.executeBooleanFunctionDeferred");
+        return result;
+        }
+
+    /**
+    destroys arglist
+    */
+    public static byte executeByteFunctionDeferred(JOpaqueAddress f,JOpaqueAddress arglist)
+     throws Throwable
+        {
+        JDEBUGMESSAGE("J+ ExecuteFunction.executeByteFunctionDeferred");
+#if SYNCH
+        ExecuteByteFunctionDeferredProc proc = new ExecuteByteFunctionDeferredProc(f,arglist);
+        queueProc(proc);
+        proc.waitUntilDone();
+        byte result = proc.mResult;
+#else
+        byte result = executeByteFunctionNow(f,arglist);
+#endif
+        JDEBUGMESSAGE("J- ExecuteFunction.executeByteFunctionDeferred");
+        return result;
+        }
+
+    /**
+    destroys arglist
+    */
+    public static char executeCharFunctionDeferred(JOpaqueAddress f,JOpaqueAddress arglist)
+     throws Throwable
+        {
+        JDEBUGMESSAGE("J+ ExecuteFunction.executeCharFunctionDeferred");
+#if SYNCH
+        ExecuteCharFunctionDeferredProc proc = new ExecuteCharFunctionDeferredProc(f,arglist);
+        queueProc(proc);
+        proc.waitUntilDone();
+        char result = proc.mResult;
+#else
+        char result = executeCharFunctionNow(f,arglist);
+#endif
+        JDEBUGMESSAGE("J- ExecuteFunction.executeCharFunctionDeferred");
+        return result;
+        }
+
+    /**
+    destroys arglist
+    */
+    public static short executeShortFunctionDeferred(JOpaqueAddress f,JOpaqueAddress arglist)
+     throws Throwable
+        {
+        JDEBUGMESSAGE("J+ ExecuteFunction.executeShortFunctionDeferred");
+#if SYNCH
+        ExecuteShortFunctionDeferredProc proc = new ExecuteShortFunctionDeferredProc(f,arglist);
+        queueProc(proc);
+        proc.waitUntilDone();
+        short result = proc.mResult;
+#else
+        short result = executeShortFunctionNow(f,arglist);
+#endif
+        JDEBUGMESSAGE("J- ExecuteFunction.executeShortFunctionDeferred");
+        return result;
+        }
+
+    /**
+    destroys arglist
+    */
+    public static int executeIntFunctionDeferred(JOpaqueAddress f,JOpaqueAddress arglist)
+     throws Throwable
+        {
+        JDEBUGMESSAGE("J+ ExecuteFunction.executeIntFunctionDeferred");
+#if SYNCH
+        ExecuteIntFunctionDeferredProc proc = new ExecuteIntFunctionDeferredProc(f,arglist);
+        queueProc(proc);
+        proc.waitUntilDone();
+        int result = proc.mResult;
+#else
+        int result = executeIntFunctionNow(f,arglist);
+#endif
+        JDEBUGMESSAGE("J- ExecuteFunction.executeIntFunctionDeferred");
+        return result;
+        }
+
+    /**
+    destroys arglist
+    */
+    public static long executeLongFunctionDeferred(JOpaqueAddress f,JOpaqueAddress arglist)
+     throws Throwable
+        {
+        JDEBUGMESSAGE("J+ ExecuteFunction.executeLongFunctionDeferred");
+#if SYNCH
+        ExecuteLongFunctionDeferredProc proc = new ExecuteLongFunctionDeferredProc(f,arglist);
+        queueProc(proc);
+        proc.waitUntilDone();
+        long result = proc.mResult;
+#else
+        long result = executeLongFunctionNow(f,arglist);
+#endif
+        JDEBUGMESSAGE("J- ExecuteFunction.executeLongFunctionDeferred");
+        return result;
+        }
+
+    /**
+    destroys arglist
+    */
+    public static float executeFloatFunctionDeferred(JOpaqueAddress f,JOpaqueAddress arglist)
+     throws Throwable
+        {
+        JDEBUGMESSAGE("J+ ExecuteFunction.executeFloatFunctionDeferred");
+#if SYNCH
+        ExecuteFloatFunctionDeferredProc proc = new ExecuteFloatFunctionDeferredProc(f,arglist);
+        queueProc(proc);
+        proc.waitUntilDone();
+        float result = proc.mResult;
+#else
+        float result = executeFloatFunctionNow(f,arglist);
+#endif
+        JDEBUGMESSAGE("J- ExecuteFunction.executeFloatFunctionDeferred");
+        return result;
+        }
+
+    /**
+    destroys arglist
+    */
+    public static double executeDoubleFunctionDeferred(JOpaqueAddress f,JOpaqueAddress arglist)
+     throws Throwable
+        {
+        JDEBUGMESSAGE("J+ ExecuteFunction.executeDoubleFunctionDeferred");
+#if SYNCH
+        ExecuteDoubleFunctionDeferredProc proc = new ExecuteDoubleFunctionDeferredProc(f,arglist);
+        queueProc(proc);
+        proc.waitUntilDone();
+        double result = proc.mResult;
+#else
+        double result = executeDoubleFunctionNow(f,arglist);
+#endif
+        JDEBUGMESSAGE("J- ExecuteFunction.executeDoubleFunctionDeferred");
+        return result;
+        }
+
+    /**
+    destroys arglist
+    */
+    public static Object executeObjectFunctionDeferred(JOpaqueAddress f,JOpaqueAddress arglist)
+     throws Throwable
+        {
+        JDEBUGMESSAGE("J+ ExecuteFunction.executeObjectFunctionDeferred");
+#if SYNCH
+        ExecuteObjectFunctionDeferredProc proc = new ExecuteObjectFunctionDeferredProc(f,arglist);
+        queueProc(proc);
+        proc.waitUntilDone();
+        Object result=proc.mResult;
+#else
+        Object result=executeObjectFunctionNow(f,arglist);
+#endif
+        JDEBUGMESSAGE("J- ExecuteFunction.executeObjectFunctionDeferred");
+        return result;
+        }
+
+    public static void freeFunctionDeferred(JOpaqueAddress f)
+        {
+        JDEBUGMESSAGE("J+ ExecuteFunction.freeFunctionDeferred");
+#if SYNCH
+        FreeFunctionDeferredProc proc = new FreeFunctionDeferredProc(f);
+        queueProc(proc);
+        proc.waitUntilDoneNoThrow();
+#else
+        freeFunctionNow(f);
+#endif
+        JDEBUGMESSAGE("J- ExecuteFunction.freeFunctionDeferred");
+        }
+
+    static
+        {
+#if SYNCH
+        JDEBUGMESSAGE("J+ ExecuteFunction static initialiser");
+        mMainThread = Thread.currentThread();
+        mDeferredProcs = new Vector();
+        JDEBUGMESSAGE("J- ExecuteFunction static initialiser");
+#endif
+        }    
+    }

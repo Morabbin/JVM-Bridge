@@ -1,0 +1,64 @@
+If you've just fetched from CVS, you'll need to build the configure scripts. You'll need autoconf 2.57 and automake 1.7.6, earlier versions may complain. Do this:
+
+    libtoolize
+    aclocal
+    autoconf
+    autoheader
+    automake -a
+    autoheader
+
+Now you're at the point of the source distribution.
+
+
+In Brief
+--------
+
+    ./configure
+    make
+    sudo make install
+
+
+In Detail
+---------
+
+    ./configure
+
+You can select the JVM you want to compile against with the --with-jvmdir and --with-jvm flags to configure. For instance:
+
+    ./configure --with-jvmdir=/usr/lib/j2sdk1.4.1_02
+
+If you don't specify --with-jvmdir, configure will look in likely places for each of the JVMs in jvm.list until it finds one that's installed.
+
+The --with-jvm flag works like this:
+
+    ./configure --with-jvm=IBM
+
+or
+
+    ./configure --with-jvm=Blackdown
+
+The configure script will search through jvm.list for a JVM that matches the one you've specified that's installed. Matching is done by subwordlist, for instance, any of these will match the 1_3.Blackdown.classic.native_threads JVM:
+
+    ./configure --with-jvm=Blackdown
+    ./configure --with-jvm=1_3.Blackdown
+    ./configure --with-jvm=Blackdown.classic
+    ./configure --with-jvm=1_3.Blackdown.classic.native_threads
+
+You can choose where you want JVM-Bridge to end up with the --prefix flag. This must be a full path. Default is '/usr/lib/jvm-bridge'. For instance:
+
+    ./configure --prefix=/opt/jvm-bridge
+    ./configure --prefix=/usr/lib/jvm-bridge-server --with-jvm=server
+
+If for some reason you want debugging, you can pass in '--enable-debugging' to configure. There are different levels that output different amounts of debugging info, check the Debug.hpp file (3 is default if you don't specify a level, 0 if you don't use the flag at all). For instance:
+
+    ./configure --enable-debugging=4
+
+OK, now we're ready to make:
+
+    make
+
+You probably want to install as root:
+
+    sudo make install
+
+And you're done installing the 'Native' part of JVM-Bridge.

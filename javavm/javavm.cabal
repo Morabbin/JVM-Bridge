@@ -1,0 +1,37 @@
+name:            javavm
+version:        1.0
+license-file:    LICENSE
+author:            Ashley Yakeley <ashley@semantic.org>
+maintainer:        Ashley Yakeley <ashley@semantic.org>
+build-depends:    base >= 4.0, witness == 0.2
+synopsis:        the Java Virtual Machine
+build-type:        Simple
+extensions:
+    RankNTypes
+    MultiParamTypeClasses 
+    FunctionalDependencies
+    FlexibleInstances
+    TypeSynonymInstances
+    ScopedTypeVariables
+    GADTs
+    OverloadedStrings
+exposed-modules:
+    Data.Bytes
+    Data.Nothing
+    Data.Subtype
+    Control.Monad.Reference
+    Control.Monad.Loop
+    Platform.JavaVM.Types
+    Platform.JavaVM.Compile
+    Platform.JavaVM
+other-modules:
+    Platform.JavaVM.Types.Types
+    Platform.JavaVM.Types.Witness
+    Platform.JavaVM.Types.Text
+    Platform.JavaVM.Types.TypeSig
+    Platform.JavaVM.Compile.Attribute
+    Platform.JavaVM.Compile.CodeInstruction
+    Platform.JavaVM.Compile.ConstantPool
+    Platform.JavaVM.Compile.Definition
+    Platform.JavaVM.Compile.Format
+    Platform.JavaVM.Compile.Writable

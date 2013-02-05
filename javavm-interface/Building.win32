@@ -1,0 +1,155 @@
+The good news: jvm-bridge will compile and work on Windows.
+The bad news: it is a little tricky.
+
+Send all comments on this directly to:
+
+Thomas Pasch <pasch@netzGeneration.com>
+
+Details:
+
+Environment
+-----------
+The MinGW (http://www.mingw.org/) has gone a long way to mature but in 
+summer 2003 it's finally there: You can now build jvm-bridge with
+MinGW + Msys + Msys DTK. There is only one program that you need
+in addition to that: mktemp.exe. You can download this program (as
+many others) from http://gnuwin32.sourceforge.net/.
+
+Other options to build jvm-bridge include Cygwin (http://sources.redhat.com/)
+or the MingGW distribution that comes with Cygwin (-mno-cygwin).
+
+The object format of gcc seems to change on a regular basis at the moment.
+Thus it is important to use a gcc that is object compatible with the gcc
+that ships with your GHC distribution. Use the -v to examine this problem.
+(I think ghc-5 was build with gcc-2.95.x and ghc-6 was build with gcc-3.2 
+under windows.)
+
+There is a constant misfit in path naming between Windows and Mingw or Cygwin.
+To level this a bit is the main reason for File.cpp in the Native folder.
+
+In order to build jvm-bridge include ghc and jvm.dll in your PATH. On my
+system this is:
+
+> export PATH=/d/Programme/ghc/ghc-6.0.1/bin:/d/Programme/j2sdk1.4.2/jre/bin/client:$PATH
+
+Building consumes lots of memory. Don't try with less than 384MB of RAM. 
+This is especially true for LibClasses.o and Class_java_awt_Component.o.
+
+It is recommended to use at least ghc-6.0.1 for compiling. I'm not
+prepared to answer questions about compiling with earlier ghc versions
+and/or other haskell compilers. This is because the ffi interface in ghc has
+changed with ghc-6.
+
+Recommended: Build DLLs of the Native part
+------------------------------------------
+It is now strongly encouraged to build DLLs of the Native part. This is a 
+little unintuitive at the moment but will relieve you from nearly all linking
+problems (see "Known Problems" #5). Just do the following:
+
+- in Native run "./configure --prefix=/c/where/you/want/to/install" 
+- run "make; make install"
+- change to Haskell and run "./configure --prefix=/c/where/you/want/to/install"
+- run "make CallbackSupport.o; make RawCallback_stub.o"
+- change to Native again
+- run "make install-dll"
+- change to Haskell and run "make; make install"
+- adjust javavm.ghc-pkg by hand (see "Known Problems" #4) and install it
+  with ghc-pkg.exe
+- to run the Examples, add Java JDK and /c/where/you/want/to/install to 
+  your PATH
+  
+The building process is that fundamental different from what you expect from
+unix shared libraries because win32 DLLs are fundamental different. I recommend
+http://webclub.kcom.ne.jp/ma/colinp/win32/dll/ for an introduction.
+
+Known Problems
+--------------
+
+1. 
+Linking TestJVMBridge.exe doesn't work (Native, target 'check'). Link with
+
+g++ -o TestJVMBridge.exe TestJVMBridge.o NullCallbackSupport.o .libs/libJVMInvocation.a .libs/libJVMBridge.a -ljvm_imp
+
+2.
+When you encounter a Alert box saying that jvm.dll is not in your Path,
+the right thing to do is to adjust your PATH, for example with
+
+> export PATH=$PATH:/d/Programme/jdk1.4.0/jre/bin/client
+
+There is nothing similar to LD_LIBRARY_PATH on Windows but perhaps you want
+to try the LD_RUN_PATH environment variable.
+
+3. 
+Once I encounter a problem with MakeClassModule.local because of a White Space
+in the (Windows) PATH. Try
+
+export PATH=/d/Programme/ghc/ghc-6.0.1/bin:/d/Programme/j2sdk1.4.2/jre/bin/client:/usr/local/bin:/usr/bin:/bin
+
+4.
+You have to adapt javavm.ghc-pkg by hand. This file should only contain
+Windows like paths (something like c:/WINNT). My file reads:
+-- begin of javavm.ghc-pkg --
+Package
+    {
+    name             = "javavm",
+    import_dirs      = ["d:/Programme/ghc/ghc-6.0.1/jvmb/imports/"],
+    source_dirs      = [],
+    library_dirs     =
+        [
+        "d:/Programme/ghc/ghc-6.0.1/jvmb/lib/",
+        "d:/Programme/j2sdk1.4.2/jre/bin/client/" 
+        ],
+    hs_libraries     = ["HaskellJVMBridge"],
+    extra_libraries  = ["JVMBridge","JVMInvocation","jvm"],
+    include_dirs     = ["d:/Programme/ghc/ghc-6.0.1/jvmb/include/"],
+    c_includes       = ["CallbackSupport.h","ExecuteFunctionControl.h","JVMBridge.h","JVMInvocation.h","ValueList.h"],
+    package_deps     = ["lang","concurrent","haskell98"],
+    extra_ghc_opts   = ["-fglasgow-exts","-fallow-undecidable-instances"],
+    extra_cc_opts    = [],
+    extra_frameworks = [],
+    extra_ld_opts    =
+        [
+        ]
+    }
+-- end of javavm.ghc-pkg   --
+
+5. (only if you only build static libraries of the native part)
+Linking the Examples never worked for me. Trying to link the normal way 
+just hangs. You should link with 
+
+ghc -package lang -package concurrent -o HelloWorld HelloWorld.o Class_java_io_PrintStream.o Class_java_lang_System.o HelloWorld_JVM.o -Ld:/Programme/ghc/ghc-6.0.1/jvmb/lib -lHaskellJVMBridge -lJVMBridge -lJVMInvocation -Ld:/MinGW/lib -lstdc++ -Ld:/MinGW/lib/gcc-lib/mingw32/3.2.3 -lgcc -lHSrts -Ld:/Programme/ghc/ghc-6.0.1/jvmb/lib -ljvm_imp -lHaskellJVMBridge
+
+and
+
+ghc -package lang -package concurrent -o TestException TestException.o Class_java_io_PrintStream.o Class_java_lang_System.o Class_java_lang_String.o Class_java_lang_Throwable.o TestException_JVM.o -Ld:/Programme/ghc/ghc-6.0.1/jvmb/lib -lHaskellJVMBridge -lJVMBridge -lJVMInvocation -Ld:/MinGW/lib -lstdc++ -Ld:/MinGW/lib/gcc-lib/mingw32/3.2.3 -lgcc -lHSrts -Ld:/Programme/ghc/ghc-6.0.1/jvmb/lib -ljvm_imp -lHaskellJVMBridge
+
+and 
+
+ghc -package lang -package concurrent -o ShowEmptyFrame ShowEmptyFrame.o ShowEmptyFrame_JVM.o Class_java_lang_String.o Class_java_lang_System.o Class_java_awt_Graphics.o Class_java_awt_Component.o Class_java_awt_Container.o Class_java_awt_Frame.o -Ld:/Programme/ghc/ghc-6.0.1/jvmb/lib -lHaskellJVMBridge -lJVMBridge -lJVMInvocation -Ld:/MinGW/lib -lstdc++ -Ld:/MinGW/lib/gcc-lib/mingw32/3.2.3 -lgcc -lHSrts -Ld:/Programme/ghc/ghc-6.0.1/jvmb/lib -ljvm_imp -lHaskellJVMBridge
+
+and 
+
+ghc -package lang -package concurrent -o ShowFrame ShowFrame.o ShowFrame_JVM.o Class_java_lang_String.o Class_java_lang_System.o Class_java_awt_Graphics.o Class_java_awt_Component.o Class_java_awt_Container.o Class_java_awt_Frame.o -Ld:/Programme/ghc/ghc-6.0.1/jvmb/lib -lHaskellJVMBridge -lJVMBridge -lJVMInvocation -Ld:/MinGW/lib -lstdc++ -Ld:/MinGW/lib/gcc-lib/mingw32/3.2.3 -lgcc -lHSrts -Ld:/Programme/ghc/ghc-6.0.1/jvmb/lib -ljvm_imp -lHaskellJVMBridge
+
+and
+
+ghc -package lang -package concurrent -o TestCallback TestCallback.o ShowFrame_JVM.o Class_java_lang_String.o Class_java_lang_System.o Class_java_awt_Graphics.o Class_java_awt_Component.o Class_java_awt_Container.o Class_java_awt_Frame.o -Ld:/Programme/ghc/ghc-6.0.1/jvmb/lib -lHaskellJVMBridge -lJVMBridge -lJVMInvocation -Ld:/MinGW/lib -lstdc++ -Ld:/MinGW/lib/gcc-lib/mingw32/3.2.3 -lgcc -lHSrts -Ld:/Programme/ghc/ghc-6.0.1/jvmb/lib -ljvm_imp -lHaskellJVMBridge
+
+and
+
+ghc -package lang -package concurrent -o InterfaceMyClass InterfaceMyClass.o InterfaceMyClass_JVM.o Header_MyClasses.o Class_MyClass.o -Ld:/Programme/ghc/ghc-6.0.1/jvmb/lib -lHaskellJVMBridge -lJVMBridge -lJVMInvocation -Ld:/MinGW/lib -lstdc++ -Ld:/MinGW/lib/gcc-lib/mingw32/3.2.3 -lgcc -lHSrts -Ld:/Programme/ghc/ghc-6.0.1/jvmb/lib -ljvm_imp -lHaskellJVMBridge
+
+or something similar. If somebody finds out what is going wrong the 'normal' 
+way, just drop me an eMail. I have thrown suspect on the content of the
+javavm.ghc-pkg that will be installed when building jvm-bridge. 
+
+6.
+The package javavm will not work in ghci mode of ghc. This is because of a bug
+in the BFD library on win32. Look at 
+http://www.haskell.org/pipermail/glasgow-haskell-bugs/2003-October/003694.html
+for details.
+
+Have fun!
+
+Thomas
+

@@ -1,0 +1,21 @@
+Version 0.3
+date
+
+    * Windows support
+    
+    * Debug flags set at configure time
+
+Version 0.2
+
+    * MacOS X support
+    
+    * Beginnings of minw32 support
+    
+    * New Sun 1.4 JVM
+
+    * Now installs in /usr/lib/jvm-bridge/
+    
+    * ExecuteFunction bindings now done at run-time
+    
+Version 0.1
+2001-12-16

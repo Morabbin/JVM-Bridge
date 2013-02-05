@@ -1,0 +1,6 @@
+starting mainProg...
+caught:
+java.lang.NullPointerException
+mainProg done
+starting TestException...
+TestException done

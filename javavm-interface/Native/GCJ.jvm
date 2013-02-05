@@ -1,0 +1,17 @@
+# libgcj/GCJ
+JVM_NAME="GCJ"
+JVM_BASEDIR="/usr/"
+JVM_INCLUDES="${JVM_BASEDIR}include/"
+JVM_LIBDIR="${JVM_BASEDIR}lib/gcj-4.1/"
+JVM_BINDIR="${JVM_BASEDIR}bin/"
+JVM_LIBDIRS="${JVM_LIBDIR}"
+JVM_CLASSES="${JVM_BASEDIR}share/java/libgcj-4.1.jar"
+JVM_CPPFLAGS="-DVM_GCJ"
+JVM_LDFLAGS="-L${JVM_LIBDIR} -ljvm"
+JVM_CHECKFILE="${JVM_LIBDIR}"
+
+JAVAC="${JVM_BINDIR}gcj"
+JAVACFLAGS="-C"
+JAVAH="${JVM_BINDIR}gcjh"
+JAVAHFLAGS="-jni --classpath=version/"
+JAR="/usr/bin/jar"

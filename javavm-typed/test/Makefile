@@ -1,0 +1,214 @@
+# JVM-Bridge -- bridge from FP languages and others to the Java VM
+# Copyright (C) 2001 Ashley Yakeley <ashley@semantic.org>
+#
+# This library is free software; you can redistribute it and/or
+# modify it under the terms of the GNU Lesser General Public
+# License as published by the Free Software Foundation; either
+# version 2.1 of the License, or (at your option) any later version.
+#
+# This library is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# Lesser General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public
+# License along with this library; if not, write to the Free Software
+# Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+
+HC		= ghc
+
+HCPACKAGES	= -package javavm -package javavm-bridge
+HCOPTS	= -fglasgow-exts -XOverloadedStrings -fallow-undecidable-instances \
+	-hide-all-packages -package base -package witness -package javavm -package javavm-interface -package javavm-bridge
+HCFLAGS	= $(HCOPTS) $(HCPACKAGES)
+JVMB	= /usr/lib/jvm-bridge
+MCM	= $(JVMB)/bin/MakeClassModule
+MJM	= $(JVMB)/bin/MakeJVMModule
+MHM	= $(JVMB)/bin/MakeHeaderModule
+
+default: all
+
+all: HelloWorld.diff TestException.diff ShowEmptyFrame ShowFrame TestCallback.run InterfaceMyClass.diff
+
+clean:
+	rm -rf Makefile.bak *.hi *.o *.class *.jar Header_*.hs Foreign *_JVM.hs \
+	HelloWorld TestException ShowEmptyFrame ShowFrame TestCallback InterfaceMyClass \
+	*.out
+
+%.run: %
+	./$<
+
+%.out: %
+	./$< > $@
+
+%.diff: %.out %.ref
+	diff -u $^
+
+java: JTestException.run
+
+JTestException.class: JTestException.java
+	. $(JVMB)/share/current.jvm; $${JAVAC} $${JAVACFLAGS} -d . $<
+
+JTestException.jar: JTestException.class
+	. $(JVMB)/share/current.jvm; $${JAR} cvf $@ $^
+
+JTestException.run: JTestException.jar
+	. $(JVMB)/share/current.jvm; $${JAVA} --cp $< JTestException
+
+HelloWorld: HelloWorld.o HelloWorld_JVM.o	\
+	Foreign/JavaVM/Lib/Class_java_io_PrintStream.o	\
+	Foreign/JavaVM/Lib/Class_java_lang_System.o
+	$(HC) $(HCFLAGS) $^ -o $@
+
+TestException: TestException.o TestException_JVM.o \
+	Foreign/JavaVM/Lib/Class_java_io_PrintStream.o	\
+	Foreign/JavaVM/Lib/Class_java_lang_System.o \
+	Foreign/JavaVM/Lib/Class_java_lang_String.o	\
+	Foreign/JavaVM/Lib/Class_java_lang_Throwable.o
+	$(HC) $(HCFLAGS) $^ -o $@
+
+ShowEmptyFrame: ShowEmptyFrame.o ShowEmptyFrame_JVM.o \
+	Foreign/JavaVM/Lib/Class_java_lang_String.o	\
+	Foreign/JavaVM/Lib/Class_java_lang_System.o	\
+	Foreign/JavaVM/Lib/Class_java_awt_Graphics.o	\
+	Foreign/JavaVM/Lib/Class_java_awt_Component.o	\
+	Foreign/JavaVM/Lib/Class_java_awt_Container.o	\
+	Foreign/JavaVM/Lib/Class_java_awt_Frame.o
+	$(HC) $(HCFLAGS) $^ -o $@
+
+ShowFrame: ShowFrame.o ShowFrame_JVM.o	\
+	Foreign/JavaVM/Lib/Class_java_lang_String.o	\
+	Foreign/JavaVM/Lib/Class_java_lang_System.o	\
+	Foreign/JavaVM/Lib/Class_java_awt_Graphics.o	\
+	Foreign/JavaVM/Lib/Class_java_awt_Component.o	\
+	Foreign/JavaVM/Lib/Class_java_awt_Container.o	\
+	Foreign/JavaVM/Lib/Class_java_awt_Frame.o
+	$(HC) $(HCFLAGS) $^ -o $@
+
+TestCallback: TestCallback.o TestCallback_JVM.o	\
+	Foreign/JavaVM/Lib/Class_java_lang_String.o	\
+	Foreign/JavaVM/Lib/Class_java_lang_System.o
+	$(HC) $(HCFLAGS) $^ -o $@
+
+InterfaceMyClass: InterfaceMyClass.o InterfaceMyClass_JVM.o Header_MyClasses.o Foreign/JavaVM/Lib/Class_MyClass.o
+	$(HC) $(HCFLAGS) $^ -o $@
+
+%_JVM.hs: %_JVM.list
+	$(MJM) $*_JVM < $< > $@
+
+MyClasses.jar: MyClass.java MyOtherClass.java
+	javac $^
+	jar cf $@ MyClass.class MyOtherClass.class
+
+Header_MyClasses.hs: MyClasses.jar
+	$(MHM) -module Header_MyClasses -jar $< > $@
+
+Foreign/JavaVM/Lib/Class_MyClass.hs: MyClasses.jar
+	$(MCM) -import Foreign.JavaVM.Lib.Header -import Header_MyClasses -cp $< MyClass > $@
+
+Foreign/JavaVM/Lib/Class_MyOtherClass.hs: MyClasses.jar
+	$(MCM) -import Foreign.JavaVM.Lib.Header -import Header_MyClasses -cp $< MyOtherClass > $@
+
+Foreign/JavaVM/Lib/Class_%.hs:
+	mkdir -p Foreign/JavaVM/Lib/
+	$(MCM) -import Foreign.JavaVM.Lib.Header `echo $* | sed -e 's/_/\./g; s/\.\./_/g'` > $@
+
+.SECONDARY:
+
+%.hi: %.o
+	@:
+
+%.o: %.hs
+	$(HC) $(HCFLAGS) -c $< -o $@
+
+%.o: %.lhs
+	$(HC) $(HCFLAGS) -c $< -o $@
+
+depend:	\
+ TestException.hs TestException_JVM.hs	\
+ TestCallback.hs	\
+ HelloWorld.hs HelloWorld_JVM.hs	\
+ ShowEmptyFrame.hs ShowEmptyFrame_JVM.hs	\
+ ShowFrame.hs ShowFrame_JVM.hs	\
+ InterfaceMyClass.hs InterfaceMyClass_JVM.hs	\
+	Foreign/JavaVM/Lib/Class_java_io_PrintStream.hs	\
+	Foreign/JavaVM/Lib/Class_java_lang_System.hs	\
+	Foreign/JavaVM/Lib/Class_java_lang_String.hs	\
+	Foreign/JavaVM/Lib/Class_java_lang_Throwable.hs	\
+	Foreign/JavaVM/Lib/Class_java_awt_Graphics.hs	\
+	Foreign/JavaVM/Lib/Class_java_awt_Component.hs	\
+	Foreign/JavaVM/Lib/Class_java_awt_Container.hs	\
+	Foreign/JavaVM/Lib/Class_java_awt_Frame.hs	\
+ Foreign/JavaVM/Lib/Class_MyClass.hs Header_MyClasses.hs
+	$(HC) -M $(HCFLAGS) $^
+
+# autogenerated by 'make depend':
+# DO NOT DELETE: Beginning of Haskell dependencies
+Header_MyClasses.o : Header_MyClasses.hs
+Foreign/JavaVM/Lib/Class_MyClass.o : Foreign/JavaVM/Lib/Class_MyClass.hs
+Foreign/JavaVM/Lib/Class_MyClass.o : Header_MyClasses.hi
+Foreign/JavaVM/Lib/Class_java_awt_Frame.o : Foreign/JavaVM/Lib/Class_java_awt_Frame.hs
+Foreign/JavaVM/Lib/Class_java_awt_Container.o : Foreign/JavaVM/Lib/Class_java_awt_Container.hs
+Foreign/JavaVM/Lib/Class_java_awt_Component.o : Foreign/JavaVM/Lib/Class_java_awt_Component.hs
+Foreign/JavaVM/Lib/Class_java_awt_Graphics.o : Foreign/JavaVM/Lib/Class_java_awt_Graphics.hs
+Foreign/JavaVM/Lib/Class_java_lang_Throwable.o : Foreign/JavaVM/Lib/Class_java_lang_Throwable.hs
+Foreign/JavaVM/Lib/Class_java_lang_String.o : Foreign/JavaVM/Lib/Class_java_lang_String.hs
+Foreign/JavaVM/Lib/Class_java_lang_System.o : Foreign/JavaVM/Lib/Class_java_lang_System.hs
+Foreign/JavaVM/Lib/Class_java_io_PrintStream.o : Foreign/JavaVM/Lib/Class_java_io_PrintStream.hs
+TestCallback_JVM.o : TestCallback_JVM.hs
+TestCallback_JVM.o : Foreign/JavaVM/Lib/Class_java_lang_System.hi
+TestCallback_JVM.o : Foreign/JavaVM/Lib/Class_java_io_PrintStream.hi
+InterfaceMyClass_JVM.o : InterfaceMyClass_JVM.hs
+InterfaceMyClass_JVM.o : Foreign/JavaVM/Lib/Class_MyClass.hi
+ShowFrame_JVM.o : ShowFrame_JVM.hs
+ShowFrame_JVM.o : Foreign/JavaVM/Lib/Class_java_awt_Frame.hi
+ShowFrame_JVM.o : Foreign/JavaVM/Lib/Class_java_awt_Container.hi
+ShowFrame_JVM.o : Foreign/JavaVM/Lib/Class_java_awt_Component.hi
+ShowFrame_JVM.o : Foreign/JavaVM/Lib/Class_java_awt_Graphics.hi
+ShowFrame_JVM.o : Foreign/JavaVM/Lib/Class_java_lang_System.hi
+ShowFrame_JVM.o : Foreign/JavaVM/Lib/Class_java_lang_String.hi
+ShowEmptyFrame_JVM.o : ShowEmptyFrame_JVM.hs
+ShowEmptyFrame_JVM.o : Foreign/JavaVM/Lib/Class_java_awt_Frame.hi
+ShowEmptyFrame_JVM.o : Foreign/JavaVM/Lib/Class_java_awt_Component.hi
+ShowEmptyFrame_JVM.o : Foreign/JavaVM/Lib/Class_java_lang_System.hi
+ShowEmptyFrame_JVM.o : Foreign/JavaVM/Lib/Class_java_lang_String.hi
+HelloWorld_JVM.o : HelloWorld_JVM.hs
+HelloWorld_JVM.o : Foreign/JavaVM/Lib/Class_java_lang_System.hi
+HelloWorld_JVM.o : Foreign/JavaVM/Lib/Class_java_io_PrintStream.hi
+InterfaceMyClass.o : InterfaceMyClass.hs
+InterfaceMyClass.o : InterfaceMyClass_JVM.hi
+InterfaceMyClass.o : Foreign/JavaVM/Lib/Class_MyClass.hi
+ShowFrame.o : ShowFrame.hs
+ShowFrame.o : ShowFrame_JVM.hi
+ShowFrame.o : Foreign/JavaVM/Lib/Class_java_awt_Graphics.hi
+ShowFrame.o : Foreign/JavaVM/Lib/Class_java_awt_Component.hi
+ShowFrame.o : Foreign/JavaVM/Lib/Class_java_awt_Container.hi
+ShowFrame.o : Foreign/JavaVM/Lib/Class_java_awt_Frame.hi
+ShowFrame.o : Foreign/JavaVM/Lib/Class_java_lang_String.hi
+ShowFrame.o : Foreign/JavaVM/Lib/Class_java_lang_System.hi
+ShowEmptyFrame.o : ShowEmptyFrame.hs
+ShowEmptyFrame.o : ShowEmptyFrame_JVM.hi
+ShowEmptyFrame.o : Foreign/JavaVM/Lib/Class_java_awt_Component.hi
+ShowEmptyFrame.o : Foreign/JavaVM/Lib/Class_java_awt_Frame.hi
+ShowEmptyFrame.o : Foreign/JavaVM/Lib/Class_java_lang_String.hi
+ShowEmptyFrame.o : Foreign/JavaVM/Lib/Class_java_lang_System.hi
+HelloWorld.o : HelloWorld.hs
+HelloWorld.o : HelloWorld_JVM.hi
+HelloWorld.o : Foreign/JavaVM/Lib/Class_java_lang_System.hi
+HelloWorld.o : Foreign/JavaVM/Lib/Class_java_io_PrintStream.hi
+TestCallback.o : TestCallback.hs
+TestCallback.o : TestCallback_JVM.hi
+TestCallback.o : Foreign/JavaVM/Lib/Class_java_lang_String.hi
+TestCallback.o : Foreign/JavaVM/Lib/Class_java_lang_System.hi
+TestException_JVM.o : TestException_JVM.hs
+TestException_JVM.o : Foreign/JavaVM/Lib/Class_java_lang_Throwable.hi
+TestException_JVM.o : Foreign/JavaVM/Lib/Class_java_lang_String.hi
+TestException_JVM.o : Foreign/JavaVM/Lib/Class_java_lang_System.hi
+TestException_JVM.o : Foreign/JavaVM/Lib/Class_java_io_PrintStream.hi
+TestException.o : TestException.hs
+TestException.o : TestException_JVM.hi
+TestException.o : Foreign/JavaVM/Lib/Class_java_lang_Throwable.hi
+TestException.o : Foreign/JavaVM/Lib/Class_java_lang_String.hi
+TestException.o : Foreign/JavaVM/Lib/Class_java_lang_System.hi
+TestException.o : Foreign/JavaVM/Lib/Class_java_io_PrintStream.hi
+# DO NOT DELETE: End of Haskell dependencies

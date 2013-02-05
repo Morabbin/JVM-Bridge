@@ -1,0 +1,93 @@
+If you've just fetched from CVS, you need to do this first:
+
+    libtoolize
+    aclocal
+    autoconf
+    automake -a
+
+Now you're at the point of the source distribution.
+
+
+In Brief
+--------
+
+Make sure the 'Native' part has already been installed.
+
+    ./configure
+    make
+    sudo make postinstall
+
+    cd Examples
+    make
+    ./HelloWorld
+
+
+In Detail
+---------
+
+Make sure the 'Native' part has already been installed.
+
+    ./configure
+
+If you want, you can select the name of the GHC package with the --with-ghcpkg flag (the default is 'javavm'). For instance:
+
+    ./configure --with-ghcpkg=javavm-server
+
+You can choose where the JVM-Bridge dir is with the --prefix flag. This must be a full path. Default is '/usr/lib/jvm-bridge'. For instance:
+
+    ./configure --prefix=/opt/jvm-bridge
+    ./configure --prefix=/usr/lib/jvm-bridge-server --with-ghcpkg=javavm-server
+
+OK, now we're ready to make:
+
+    make
+
+You probably want to install as root.
+
+    sudo make postinstall
+
+This installs the files and runs ghc-pkg. If you want to install the files somewhere else for packaging, do this:
+
+    sudo make prefix=/home/ashley/wherever install
+
+Passing "install" to make will just copy the files. It won't run ghc-pkg. Use "postinstall" to run ghc-pkg.
+
+And you're done installing Haskell-JVM-Bridge.
+
+To build the examples, do this:
+
+    cd Examples
+    make
+    
+And to run them:
+
+    ./HelloWorld
+
+HelloWorld simply prints out "Hello World!"
+
+    ./TestException
+
+TestException throws a NullPointerException in Java (by calling an instance method on a null object) and catches it in Haskell.
+
+    ./TestCallback
+
+TestCallback...
+    
+ 1. defines its own Java class with an overridden method "foo"
+    
+ 2. creates an object of that class with a Haskell function for "foo" (that writes to the output)
+    
+ 3. forks a Java thread that calls the "foo" method
+
+ 4. waits for ten seconds
+
+If you're running a window system that your JVM knows about, you might also try these:
+
+    ./ShowEmptyFrame
+    ./ShowFrame
+
+ShowEmptyFrame displays a resizable window ("Frame" in Java) for 30 seconds.
+
+ShowFrame displays a resizable window with an oval in it for 30 seconds.
+
+Have fun!

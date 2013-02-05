@@ -1,0 +1,6 @@
+#!/bin/sh
+set -e
+. ./current.jvm
+${JAVAC} -d . ShowFrame.java
+${JAR} cvf ShowFrame.jar ShowFrame.class
+${JAVA} -cp ShowFrame.jar ShowFrame

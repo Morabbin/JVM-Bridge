@@ -1,0 +1,10 @@
+#!/bin/sed -f
+s|^alias=\(.*\)|JVM_NAME="\1"\nJVM_INCLUDES="/usr/lib/jvm/\1/include/ /usr/lib/jvm/\1/include/linux/"\nJVM_LIBDIRS="/usr/lib/jvm/\1/jre/lib/${JVM_MACHINE}:/usr/lib/jvm/\1/jre/lib/${JVM_MACHINE}/server"\nJVM_CLASSES="/usr/lib/jvm/\1/jre/lib/rt.jar"\nJVM_LDFLAGS="-L/usr/lib/jvm/\1/jre/lib/${JVM_MACHINE}/server -ljvm"| p
+s/^jre java \(.*\)/JAVA="\1"/ p
+s/^jre jar \(.*\)/JAR="\1"/ p
+s/^jdk jar \(.*\)/JAR="\1"/ p
+s/^jdk javac \(.*\)/JAVAC="\1"/ p
+s/^jdk javah \(.*\)/JAVAH="\1"/ p
+$ i \
+JAVACFLAGS=""\nJAVAHFLAGS=""
+d

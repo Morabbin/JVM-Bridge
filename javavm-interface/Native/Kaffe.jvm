@@ -1,0 +1,18 @@
+# Kaffe/Jikes
+JVM_NAME="Kaffe"
+JVM_RTDIR="${JVM_BASEDIR}jre/"
+JVM_INCDIR="${JVM_BASEDIR}include/"
+JVM_INCLUDES="${JVM_INCDIR}"
+JVM_LIBDIR="${JVM_RTDIR}lib/i386/"
+JVM_LIBDIRS="${JVM_LIBDIR}"
+JVM_BINDIR="${JVM_BASEDIR}bin/"
+JVM_CLASSES="/usr/share/kaffe/Klasses.jar"
+JVM_CPPFLAGS="-DVM_KAFFE"
+JVM_LDFLAGS="-L${JVM_LIBDIR} -lkaffevm"
+JVM_CHECKFILE="${JVM_INCDIR}jni.h"
+
+JAVAC="/usr/bin/jikes-kaffe"
+JAVACFLAGS="-classpath ${JVM_CLASSES}"
+JAVAH="${JVM_BINDIR}kaffeh"
+JAVAHFLAGS="-jni -classpath ${JVM_CLASSES}:./"
+JAR="${JVM_BINDIR}jar"

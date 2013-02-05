@@ -1,0 +1,7 @@
+'Native' and 'Haskell' are set up as two separate Autotools projects. Build 'Native' first. Build instructions are in the 'INSTALL' file in each directory.
+
+Make sure you have a Java VM and also the associated Java development tools.
+
+I recommend GHC 6.2.1 or later, though it may compile with earlier versions. There is a bug in ghc-pkg in GHC 6.2 that causes problems with adding the javavm package on Linux. So use 6.2.1 instead.
+
+If you're building straight from CVS, you'll need autotools. I use libtool 1.5, autoconf 2.57 and automake 1.7.6. Other versions may not work.

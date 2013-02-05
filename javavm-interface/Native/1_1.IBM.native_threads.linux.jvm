@@ -1,0 +1,17 @@
+# IBM JDK/JRE 1.1.*
+JVM_NAME="1_1.IBM.native_threads.linux"
+JVM_INCDIR="${JVM_BASEDIR}include/"
+JVM_INCLUDES="${JVM_INCDIR} ${JVM_INCDIR}linux/"
+JVM_LIBDIR="${JVM_BASEDIR}lib/linux/native_threads/"
+JVM_LIBDIRS="${JVM_LIBDIR}"
+JVM_BINDIR="${JVM_BASEDIR}bin/"
+JVM_CLASSES="${JVM_BASEDIR}lib/classes.zip"
+JVM_CPPFLAGS="-DVM_IBM"
+JVM_LDFLAGS="-L${JVM_LIBDIR} -ljava"
+JVM_CHECKFILE="${JVM_LIBDIR}"
+
+JAVAC="${JVM_BINDIR}javac"
+JAVACFLAGS=""
+JAVAH="${JVM_BINDIR}javah"
+JAVAHFLAGS="-jni -classpath ${JVM_CLASSES}:./"
+JAR="${JVM_BINDIR}jar"

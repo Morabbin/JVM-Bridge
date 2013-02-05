@@ -1,0 +1,16 @@
+# SableVM/Jikes
+JVM_NAME="SableVM"
+JVM_INCDIR="/usr/include/sablevm/"
+JVM_INCLUDES="${JVM_INCDIR}"
+JVM_LIBDIR="/usr/lib"
+JVM_LIBDIRS="${JVM_LIBDIR}"
+JVM_CLASSES="/usr/share/sablevm-classpath/libclasspath.jar"
+JVM_CPPFLAGS="-DVM_SABLEVM"
+JVM_LDFLAGS="-L${JVM_LIBDIR} -lsablevm"
+JVM_CHECKFILE="${JVM_INCDIR}jni.h"
+
+JAVAC="/usr/bin/jikes-sablevm"
+JAVACFLAGS="-classpath ${JVM_CLASSES}"
+JAVAH="/usr/bin/javah-cp"
+JAVAHFLAGS="-jni -classpath ${JVM_CLASSES}:./"
+JAR="/usr/bin/fastjar"

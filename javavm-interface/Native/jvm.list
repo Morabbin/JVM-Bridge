@@ -1,0 +1,20 @@
+# order to look for JVMs
+FreeBSD
+Darwin
+OpenJDK.7
+OpenJDK.6
+Sun.6
+Sun.client.linux
+Sun.client.win32
+Sun.server.linux
+Sun.classic.native_threads.linux
+Sun.classic.green_threads.linux
+IBM.classic
+IBM.classic.debug
+GCJ
+1_3.Blackdown.classic.native_threads.linux
+1_3.Blackdown.classic.green_threads.linux
+1_1.IBM.native_threads.linux
+1_1.Blackdown.green_threads.linux
+Kaffe
+#SableVM -- broken, JNIEnv decl issue
