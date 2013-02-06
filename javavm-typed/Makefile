@@ -22,7 +22,7 @@ cabal-clean-%:
 cabal-build-%:
 	rm -f *.cabal
 	make $*.cabal
-	make cabal-build
+	make cabal-install
 	rm $*.cabal
 
 cabal-haddock-%:
@@ -45,7 +45,7 @@ cabal-clean:
 cabal-haddock:
 	-$(CABAL) $(CABAL_FLAGS) haddock
 
-cabal-install: 
+cabal-install:
 	$(CABAL) $(CABAL_FLAGS) install
 
 clean: cabal-clean-ShowClasses cabal-clean-stage2
@@ -65,7 +65,7 @@ MakeClassModule.inplace: MakeClassModule.m4
 	chmod a+x $@
 
 MakeClassModule: MakeClassModule.m4
-	. $(JVMFILE); m4 -Dbindir=$(JVMB_BINDIR) -Ddatadir=$(JVMB_DATADIR) -Djardir=$(JVMB_DATADIR) -Dlibdirs="$(JVMB_LIBDIR):$(JVM_LIBDIRS)" $< > $@
+	m4 -Dbindir=$(JVMB_BINDIR) -Ddatadir=$(JVMB_DATADIR) -Djardir=$(JVMB_DATADIR) -Dlibdirs="$(JVMB_LIBDIR):$(JVM_LIBDIRS)" $< > $@
 	chmod a+x $@
 
 MakeHeaderModule: MakeHeaderModule.m4
@@ -80,7 +80,7 @@ MakeJVMModule: MakeJVMModule.m4
 	sed -n -e "`sed -e 's|\.|\\\.|g; s|^|/^|; s|$$|/ p;|' < $*.allowedclasses`" < $< > $@
 
 All.classlist: $(JVMFILE)
-	. $(JVMFILE); for ff in `echo $${JVM_CLASSES}`; do $${JAR} tf $${ff}; done | sed -n -e 's/^\([^-]*\).class$$/\1/ p' | sort -u | tr / . > $@
+	for ff in `echo $${JVM_CLASSES}`; do $${JAR} tf $${ff}; done | sed -n -e 's/^\([^-]*\).class$$/\1/ p' | sort -u | tr / . > $@
 
 Foreign/JavaVM/Lib/Header/%.hs: %.classlist MakeHeaderModule.inplace Header.m4
 	./MakeHeaderModule.inplace -module Foreign.JavaVM.Lib.Header.$* $< > $@
@@ -115,3 +115,4 @@ install: extrastuff cabal-install-stage2
 	sudo install -D MakeJVMModule $(JVMB_BINDIR)/MakeJVMModule
 	sudo install -D Header.m4 $(JVMB_DATADIR)/Header.m4
 	sudo install -D MakeHeaderModule $(JVMB_BINDIR)/MakeHeaderModule
+
