@@ -30,13 +30,13 @@ if test -x "${FILE}" ; then
     echo "yes"
 else
     echo "no"
-    AC_MSG_ERROR([cannot find executable ${FILE}])
+    AC_MSG_ERROR([cannot find executable '${FILE}'])
 fi
 ])
 
 AC_DEFUN([CHECK_JVM],
 [THEJVM=[$1]
-. "./${THEJVM}.jvm"
+. "./share/${THEJVM}.jvm"
 if test -e "${JVM_CHECKFILE}" ; then
     JVM="${THEJVM}"
     echo "yes"
@@ -112,82 +112,11 @@ JVM_ADDRESSSIZE=$((${ac_cv_sizeof_voidp}*8))
 # hack for Cygwin
 CYGPATH=`type -p cygpath`
 
-JVM=""
-if test -r /etc/jvm ; then
-    for TESTJVM in $(sed -e '/^#/ d; /^$/ d' /etc/jvm | grep "${with_jvm}" | sed -e 's|/\([^/]*\)$|/.\1.jinfo|') ; do
-        AC_MSG_CHECKING([for JVM ${TESTJVM}])
-        if test -r ${TESTJVM} ; then
-            JVM_MACHINE="`uname -p`"
-            if test "${JVM_MACHINE}" == "unknown" ; then
-                if test "${JVM_ADDRESSSIZE}" == "64" ; then
-                    JVM_MACHINE=amd64
-                fi
-                if test "${JVM_ADDRESSSIZE}" == "32" ; then
-                    JVM_MACHINE=i386
-                fi
-            fi
-            rm -f current.jvm
-            echo "JVM_ADDRESSSIZE=${JVM_ADDRESSSIZE}" > current.jvm
-            echo "JVM_MACHINE=${JVM_MACHINE}" >> current.jvm
-            ./jinfo2jvm < ${TESTJVM} >> current.jvm
-            JVM="${TESTJVM}"
-            echo "yes"
-            break 1
-        else
-            echo "no"
-        fi
-    done
-fi
-
-if test "z${JVM}" == "z" ; then
-    for TESTJVM in $(sed -e '/^#.*/ d' jvm.list | grep "${JVMFILTER}") ; do
-        JVM_CHECKFILE=""
-        if test "z${JVMDIR}" == "z" ; then
-            if test -f "${TESTJVM}.jvmdirs" ; then
-                for JVMDIRS in $(sed -e '/^#.*/ d' "${TESTJVM}.jvmdirs") ; do
-                    AC_MSG_CHECKING([for JVM ${TESTJVM} in any ${JVMDIRS}])
-                    echo
-                    for JVMDIR in $(ls -d ${JVMDIRS} 2>&- | sort -r) ; do
-                        CHECK_JVMDIR(${JVMDIR},${TESTJVM})
-                        if test -e "${JVM_CHECKFILE}" ; then
-                            break 3
-                        fi
-                    done
-                done
-            else
-                JVM_BASEDIR=""
-                AC_MSG_CHECKING(for JVM ${TESTJVM})
-                CHECK_JVM(${TESTJVM})
-                if test -e "${JVM_CHECKFILE}" ; then
-                    break
-                fi
-            fi
-        else
-            CHECK_JVMDIR(${JVMDIR},${TESTJVM})
-            if test -e "${JVM_CHECKFILE}" ; then
-                break
-            fi
-        fi
-    done
-
-    if test "z${JVM}" == "z" ; then
-        if test "z${with_jvm}" == "z" ; then
-            AC_MSG_ERROR([cannot find suitable JVM])
-        else
-            AC_MSG_ERROR([cannot find suitable JVM matching ${with_jvm}])
-        fi
-    fi
-
-    rm -f current.jvm
-    echo "JVM_ADDRESSSIZE=${JVM_ADDRESSSIZE}" > current.jvm
-    echo 'JVM_BASEDIR="'${JVM_BASEDIR}'"' >> current.jvm
-    cat "${JVM}.jvm" >> current.jvm
-fi
-
-. ./current.jvm
+JAVAC=`which javac`
 CONF_CHECK_EXEC(${JAVAC})
 AC_SUBST(JAVAC)
 
+JAR=`which jar`
 CONF_CHECK_EXEC(${JAR})
 AC_SUBST(JAR)
 
@@ -212,15 +141,15 @@ CPPFLAGS=-DJVM_ADDRESSSIZE=${JVM_ADDRESSSIZE}
 
 #AC_SUBST(CPPFLAGS)
 AC_SUBST(DEBUG_CPPFLAGS)
-AC_SUBST(JVM_CPPFLAGS)
-AC_DEFINE_UNQUOTED(JVM_CLASSES, "$JVM_CLASSES",[DEFS inclusion])
-AC_SUBST(JVM_FRAMEWORKDIRS)
-AC_SUBST(JVM_FRAMEWORKS)
-AC_SUBST(JVM_INCLUDES)
-AC_SUBST(JVM_LIBDIRS)
-AC_DEFINE_UNQUOTED(JVM_LIBDIRS,"$JVM_LIBDIRS",[DEFS inclusion])
-AC_SUBST(JVM_LDFLAGS)
-AC_SUBST(JAVACFLAGS)
+# AC_SUBST(JVM_CPPFLAGS)
+# AC_DEFINE_UNQUOTED(JVM_CLASSES, "$JVM_CLASSES",[DEFS inclusion])
+# AC_SUBST(JVM_FRAMEWORKDIRS)
+# AC_SUBST(JVM_FRAMEWORKS)
+# AC_SUBST(JVM_INCLUDES)
+# AC_SUBST(JVM_LIBDIRS)
+# AC_DEFINE_UNQUOTED(JVM_LIBDIRS,"$JVM_LIBDIRS",[DEFS inclusion])
+# AC_SUBST(JVM_LDFLAGS)
+ AC_SUBST(JAVACFLAGS)
 
 AM_CONDITIONAL(DLL, test "$host_os" = cygwin -o "$host_os" = mingw32)
 AC_DEFINE_UNQUOTED(MINGW,`if test $host_os = mingw32; then echo 1; else echo 0; fi`,[MinGW build])

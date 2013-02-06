@@ -8,7 +8,7 @@ endif
 
 include_HEADERS= JVMBridge.h ExecuteFunctionControl.h ValueList.h JVMInvocation.h
 lib_LTLIBRARIES	= libJVMBridge.la libJVMInvocation.la
-data_DATA= JVMBridge.jar current.jvm
+data_DATA= JVMBridge.jar
 libJVMBridge_la_SOURCES= JVMBridge.cpp ValueList.cpp ExecuteFunction.cpp Debug.hpp JVMBridge.h CallbackSupport.h ValueListPrivate.hpp ValueList.h Configure.h ExecuteFunctionControl.h
 libJVMInvocation_la_SOURCES= JVMInvocation.cpp File.cpp Debug.hpp JVMInvocation.h File.hpp Configure.h
 libJVMBridge_la_LDFLAGS= -Wl,-lstdc++
@@ -25,9 +25,9 @@ FindClasses_LDFLAGS=$(JVM_LDFLAGS)
 
 PACKAGE_SLASH=org/semantic/jvmbridge/
 # JAVACFLAGS=$(JAVACFLAGS)
-ACLOCAL_AMFLAGS = -I m4
+ACLOCAL_AMFLAGS =-I m4
 AM_CPPFLAGS=$(JVM_CPPFLAGS) @DEBUG_CPPFLAGS@
-AM_CXXFLAGS= -O3 -W -Wall -fno-rtti
+AM_CXXFLAGS=-O3 -W -Wall -fno-rtti
 
 check_PROGRAMS= TestJVMBridge TestFile FindClasses
 
@@ -46,7 +46,7 @@ MAINTAINERCLEANFILES = config.log config.status config.guess config.sub configur
 MOSTLYCLEANFILES = ExecuteFunction.java *.class
 #MOSTLYCLEANFILES += org
 CLEANFILES = *.jar
-DISTCLEANFILES = current.jvm
+DISTCLEANFILES =
 
 ExecuteFunction.lo: ExecuteFunctionControl.h Debug.hpp
 ValueList.lo: ValueListPrivate.hpp ValueList.h Debug.hpp
