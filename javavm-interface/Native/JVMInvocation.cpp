@@ -106,9 +106,9 @@ JavaVM* JVMBridge_CreateJavaVM(const char* const* userClassPath)
 #else
     args.version            = JNI_VERSION_1_2;
 #endif
-    args.nOptions            = nOptions;
+    args.nOptions           = nOptions;
     args.options            = options;
-    args.ignoreUnrecognized    = false;
+    args.ignoreUnrecognized = false;
 #else
     InfoDebugMessage("1.1-style JVM invocation\n");
     JDK1_1InitArgs args;
