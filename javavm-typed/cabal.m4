@@ -4,6 +4,7 @@ License-File:	LICENSE
 Author:			Ashley Yakeley <ashley@semantic.org>
 Maintainer:		Ashley Yakeley <ashley@semantic.org>
 Build-Depends:	base >= 4.0, witness, javavm, javavm-interface
+Build-type:     Simple
 ifelse(PROGRAM,,`Synopsis:		bridge to a running Java Virtual Machine
 Exposed-Modules:
 	Foreign.JavaVM
